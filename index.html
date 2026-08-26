@@ -967,7 +967,19 @@ function observeCats(){
 /* ---------------------- Etkileşim ---------------------- */
 $('#chips').addEventListener('click', e=>{
   const b = e.target.closest('[data-go]'); if(!b) return;
-  document.getElementById(b.dataset.go).scrollIntoView({behavior:'smooth',block:'start'});
+  const sec = document.getElementById(b.dataset.go); if(!sec) return;
+
+  /* Yumuşak kaydırma uzun mesafede yavaşlayarak duruyor ve yol boyunca her
+     kategoriyi çizmek zorunda kalıyordu: "frene basıyor" hissi buydu.
+     Doğrudan hedefe atlar. */
+  sec.scrollIntoView({block:'start', behavior:'auto'});
+
+  /* Çip hemen aktif olsun, gözlemcinin haber vermesini bekleme */
+  document.querySelector('.chip[aria-current="true"]')?.setAttribute('aria-current','false');
+  b.setAttribute('aria-current','true');
+  curCat = b.dataset.go;
+  clearTimeout(chipTimer);
+  b.scrollIntoView({inline:'center', block:'nearest', behavior:'auto'});
 });
 
 /* Tek kaydırma dinleyicisi: üst başlık, dağ derinliği ve alacakaranlık aynı
