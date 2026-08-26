@@ -652,7 +652,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <div class="grain"></div>
 
 <!-- Scroll'da beliren ince başlık -->
-<div class="topbar" id="topbar"><img src="assets/logo.png" alt="Shire"></div>
+<div class="topbar" id="topbar"><img src="logo.png" alt="Shire"></div>
 
 <main class="shell">
 
@@ -673,7 +673,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
       </g>
     </svg>
 
-    <img class="hero-logo" src="assets/logo.png" alt="Shire — Waffle & Coffee">
+    <img class="hero-logo" src="logo.png" alt="Shire — Waffle & Coffee">
 
     <div class="hero-rule">
       <i></i>
@@ -716,7 +716,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
   <!-- ============== ALT BİLGİ ============== -->
   <footer class="foot">
-    <img class="foot-logo" src="assets/logo.png" alt="Shire">
+    <img class="foot-logo" src="logo.png" alt="Shire">
     <div class="links" id="links"></div>
     <small id="addr"></small>
     <small>Fiyatlarımıza KDV dâhildir · Menü bilgilendirme amaçlıdır</small>
@@ -787,11 +787,11 @@ const HUB_ID    = "__hub";
 const KEY       = "shire_menu_v2";   /* çevrimdışı yedek (yalnızca okuma) */
 
 /* Kapak görselleri (Orta Dünya esintili, kategoriye özel) */
-const IMG_HUB       = "assets/hub.jpg";
-const IMG_WAFFLE    = "assets/waffle.jpg";
-const IMG_ICECEKLER = "assets/icecekler.jpg";
-const IMG_KAHVE     = "assets/kahve.jpg";
-const LOGO          = "assets/logo.png";
+const IMG_HUB       = "hub.jpg";
+const IMG_WAFFLE    = "waffle.jpg";
+const IMG_ICECEKLER = "icecekler.jpg";
+const IMG_KAHVE     = "kahve.jpg";
+const LOGO          = "logo.png";
 
 /* ---- Varsayılan içerik (panel ilk açıldığında bu görünür) ---- */
 const DEFAULTS = {
@@ -832,7 +832,7 @@ const $  = s => document.querySelector(s);
 const esc = s => String(s==null?"":s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const uid = () => Math.random().toString(36).slice(2,9);
 let DATA = null, ADMIN_ON = false, TAB = "urun", EDIT = null, CEDIT = null, BIZ_HUB_DRAFT = undefined;
-let IMGS = {}, COVERS = {}, DOC_EXISTS = false;
+let IMGS = {}, COVERS = {}, DOC_EXISTS = false, LAST_ERR = "";
 /* Ölçüler kaydırma karesinde değil, rota değişince alınır */
 let IN_CAT = false, BAR_TH = 320, HERO_H = 520;
 let refreshMetrics = ()=>{};
@@ -841,7 +841,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const isData = v => typeof v === 'string' && v.startsWith('data:');
 
 /* Görseller ayrı dokümanlarda durur: menü dokümanı 1 MB sınırına takılmasın diye
-   yazarken ayıklanır, okurken geri eklenir. Dosya yolu olan görseller (assets/…)
+   yazarken ayıklanır, okurken geri eklenir. Dosya yolu olan görseller (logo.png, waffle.jpg …)
    kısacık olduğu için menü dokümanında kalır. */
 function stripImgs(d){
   const c = clone(d);
@@ -880,6 +880,18 @@ async function loadPhoto(id, imgEl){
   }catch(e){ /* küçük önizleme ekranda kalır */ }
 }
 
+/* Yazma hatasının sebebini açıkça söyler: sessizce kaybolmasın */
+function fsErr(e, what){
+  const c = (e && e.code) || "";
+  LAST_ERR = (c || (e && e.message) || "bilinmeyen") + " · " + new Date().toLocaleTimeString("tr-TR");
+  if(c.includes("permission-denied"))   return what + " kaydedilemedi: yetkiniz yok (Firestore kuralları)";
+  if(c.includes("invalid-argument") ||
+     c.includes("resource-exhausted"))  return what + " çok büyük, daha küçük bir görsel seçin";
+  if(c.includes("unavailable") ||
+     c.includes("network"))             return "Bağlantı yok, kaydedilemedi";
+  return what + " kaydedilemedi";
+}
+
 async function putImg(id, thumb, full){
   try{
     if(thumb){
@@ -891,7 +903,7 @@ async function putImg(id, thumb, full){
     }
     IMGS[id] = thumb || ""; delete PHOTOS[id];
     return true;
-  }catch(e){ toast("Fotoğraf kaydedilemedi"); return false; }
+  }catch(e){ toast(fsErr(e, "Fotoğraf")); return false; }
 }
 async function delImg(id){
   try{ await deleteDoc(doc(db, IMG_COL, id)); }catch(e){}
@@ -903,7 +915,7 @@ async function putCover(id, dataUrl){
     if(isData(dataUrl)){ await setDoc(doc(db, COVER_COL, id), { data:dataUrl, at:Date.now() }); COVERS[id] = dataUrl; }
     else{ await deleteDoc(doc(db, COVER_COL, id)).catch(()=>{}); delete COVERS[id]; }
     return true;
-  }catch(e){ toast("Kapak görseli kaydedilemedi"); return false; }
+  }catch(e){ toast(fsErr(e, "Kapak görseli")); return false; }
 }
 async function delCover(id){ try{ await deleteDoc(doc(db, COVER_COL, id)); }catch(e){} delete COVERS[id]; }
 
@@ -920,6 +932,7 @@ async function saveData(msg){
     toast(msg || "Kaydedildi");
     return true;
   }catch(e){
+    LAST_ERR = ((e && e.code) || "bilinmeyen") + " · " + new Date().toLocaleTimeString("tr-TR");
     toast(e.code === 'permission-denied' ? "Yetkiniz yok (Firestore kuralları)" : "Kaydedilemedi");
     return false;
   }
@@ -1289,9 +1302,31 @@ function bizView(){
       ${hubPrev?`<button class="btn" id="bHubImgDel">Kapak görselini kaldır</button>`:''}
     </div>
   </div>
+  ${diagView()}
   <div class="card">
     <p class="hint" style="margin:0 0 10px">Her şeyi başlangıç haline döndürür. Eklediğiniz ürünler ve fotoğraflar silinir.</p>
     <button class="btn danger" id="bReset" style="width:100%">Varsayılana dön</button>
+  </div>`;
+}
+
+/* --- Tanılama: Firestore'un gerçekte ne yaptığını gösterir --- */
+function diagView(){
+  const u = auth.currentUser;
+  const covers = Object.keys(COVERS);
+  const cats = DATA.categories.map(c =>
+    esc(c.name) + ": " + (COVERS[c.id] ? "Firestore" : (c.img ? "dosyadan" : "yok"))
+  ).join(" · ");
+  const row = (k,v) => `<div style="display:flex;gap:10px;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(201,162,75,.14)"><span style="color:var(--muted)">${k}</span><b style="text-align:right">${v}</b></div>`;
+  return `<div class="card">
+    <p class="hint" style="margin:0 0 10px">Tanılama — bir sorun olursa buradaki satırları paylaşın.</p>
+    <div style="font-size:11px;line-height:1.5">
+      ${row("Giriş", u ? "var" : "YOK")}
+      ${row("Menü dokümanı", DOC_EXISTS ? "Firestore'da var" : "YOK")}
+      ${row("Kapak görselleri", covers.length + " kayıt")}
+      ${row("Ürün fotoğrafları", Object.keys(IMGS).length + " kayıt")}
+      ${row("Son hata", LAST_ERR ? esc(LAST_ERR) : "—")}
+    </div>
+    <p class="hint" style="margin:10px 0 0">Kategori kapakları: ${cats}</p>
   </div>`;
 }
 
@@ -1349,10 +1384,11 @@ panel.addEventListener('click', async e=>{
     if(!it.name){ toast("Ürün adı gerekli"); return; }
     const newCat=$('#fCat').value;
     const old = DATA.categories.find(c=>c.id===EDIT.catId);
-    if(!EDIT.isNew && old){ const i=old.items.findIndex(x=>x.id===it.id); if(i>-1) old.items.splice(i,1); }
-    DATA.categories.find(c=>c.id===newCat).items.push(it);
-    if(EDIT.imgDirty) await putImg(it.id, it.img, it.full);
-    delete it.full;                                   /* tam boy menü dokümanına yazılmaz */
+    /* Önce fotoğraf: yazılamazsa ürüne hiç dokunma */
+    if(EDIT.imgDirty && !(await putImg(it.id, it.img, it.full))) return;
+    delete it.full;
+    if(!EDIT.isNew && old){ const j=old.items.findIndex(x=>x.id===it.id); if(j>-1) old.items.splice(j,1); }
+    DATA.categories.find(c=>c.id===newCat).items.push(it);                                   /* tam boy menü dokümanına yazılmaz */
     EDIT=null; await saveData("Ürün kaydedildi"); drawPanel(); return;
   }
 
@@ -1367,9 +1403,10 @@ panel.addEventListener('click', async e=>{
     const c = CEDIT.cat;
     c.name=$('#gName').value.trim(); c.note=$('#gNote').value.trim();
     if(!c.name){ toast("Kategori adı gerekli"); return; }
+    /* Önce görsel: yazılamazsa menüye hiç dokunma, kullanıcı yeniden denesin */
+    if(CEDIT.imgDirty && !(await putCover(c.id, c.img))) return;
     if(CEDIT.isNew){ DATA.categories.push(c); }
     else{ const i=DATA.categories.findIndex(x=>x.id===c.id); if(i>-1) DATA.categories[i]=c; }
-    if(CEDIT.imgDirty) await putCover(c.id, c.img);
     CEDIT=null; await saveData("Kategori kaydedildi"); drawPanel(); return;
   }
   if(t.dataset.cact){
