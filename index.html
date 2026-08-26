@@ -57,7 +57,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
 /* Zemin dokusu: parşömen grenİ + eski harita ışığı ------------ */
 .grain{
-  position:fixed;inset:0;pointer-events:none;z-index:3;opacity:.16;mix-blend-mode:overlay;
+  position:fixed;inset:0;pointer-events:none;z-index:3;opacity:.085;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
 }
 .shell{
@@ -153,9 +153,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   width:100%;max-width:var(--maxw);z-index:20;
   display:flex;align-items:center;justify-content:center;gap:10px;
   padding:10px 16px calc(10px + env(safe-area-inset-top,0px));
-  background:linear-gradient(180deg,rgba(11,23,16,.97),rgba(11,23,16,.86));
+  background:linear-gradient(180deg,rgba(11,23,16,.99),rgba(11,23,16,.96));
   border-bottom:1px solid var(--line);
-  backdrop-filter:blur(8px);
   transition:transform .35s cubic-bezier(.22,.8,.3,1);
 }
 .topbar.show{transform:translateX(-50%) translateY(0)}
@@ -209,7 +208,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   padding:12px 0 12px;
   background:linear-gradient(180deg,rgba(11,23,16,.98) 60%,rgba(11,23,16,0));
 }
-.nav.stuck{background:rgba(11,23,16,.97);backdrop-filter:blur(10px);border-bottom:1px solid rgba(201,162,75,.14)}
+.nav.stuck{background:rgba(11,23,16,.99);border-bottom:1px solid rgba(201,162,75,.14)}
 .nav-scroll{display:flex;gap:9px;overflow-x:auto;padding:0 var(--pad);scrollbar-width:none;scroll-behavior:smooth}
 .nav-scroll::-webkit-scrollbar{display:none}
 .chip{
@@ -240,6 +239,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .wisp i:first-child{top:12px;transform:scaleX(1)}
 .wisp i:last-child{top:30px;opacity:.7;animation-duration:44s;animation-direction:alternate-reverse}
 @keyframes wispmove{from{transform:translateX(-26px)}to{transform:translateX(26px)}}
+/* Telefonda süs katmanı sayısını düşür: sürekli dönen bulanıklıklar pili ve kareyi yiyor */
+@media (max-width:520px){
+  .mist.m5,.mist.m6{display:none}
+  .wisp i:last-child{display:none}
+}
 .cat-title{
   font-family:var(--display);font-weight:700;font-size:clamp(20px,6vw,27px);letter-spacing:.03em;
   margin:0;color:var(--gold-lt);text-transform:uppercase;
@@ -261,8 +265,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   border:1px solid rgba(201,162,75,.20);
   background:
     linear-gradient(180deg,rgba(201,162,75,.05),rgba(0,0,0,0) 40%),
-    linear-gradient(150deg,rgba(24,17,8,.80),rgba(10,22,14,.78));
-  backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+    linear-gradient(150deg,rgba(25,18,9,.94),rgba(11,23,15,.93));
   box-shadow:0 1px 0 rgba(235,217,166,.06) inset, 0 8px 22px -18px #000;
   transition:transform .2s ease,border-color .25s ease;
 }
@@ -666,7 +669,7 @@ import { initializeApp }
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
          sendPasswordResetEmail, setPersistence, browserLocalPersistence }
   from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, getDocs }
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, getDocs }
   from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -683,7 +686,8 @@ const db   = getFirestore(app);
 setPersistence(auth, browserLocalPersistence).catch(()=>{});
 
 const MENU_DOC = doc(db, "shire", "menu");
-const IMG_COL  = "images";
+const IMG_COL  = "images";   /* küçük önizleme (kartlar) */
+const PHOTO_COL = "photos";  /* tam boy (yalnızca ürün açılınca indirilir) */
 const KEY      = "shire_menu_v1";   /* çevrimdışı yedek (yalnızca okuma) */
 
 /* ---- Varsayılan içerik (panel ilk açıldığında bu görünür) ---- */
@@ -743,13 +747,23 @@ const clone = o => JSON.parse(JSON.stringify(o));
    diye yazarken ürünlerden ayrılır, okurken geri eklenir. */
 function stripImgs(d){
   const c = clone(d);
-  c.categories.forEach(cat => (cat.items||[]).forEach(it => { delete it.img; }));
+  c.categories.forEach(cat => (cat.items||[]).forEach(it => { delete it.img; delete it.full; }));
   return c;
 }
 function withImgs(d){
   const c = clone(d);
   c.categories.forEach(cat => (cat.items||[]).forEach(it => { it.img = IMGS[it.id] || ""; }));
   return c;
+}
+
+const PHOTOS = {};   /* açılan ürünlerin tam boy fotoğrafı, oturum boyunca saklanır */
+async function loadPhoto(id, imgEl){
+  if(PHOTOS[id]){ imgEl.src = PHOTOS[id]; return; }
+  try{
+    const s = await getDoc(doc(db, PHOTO_COL, id));
+    const d = s.exists() ? (s.data().data || "") : "";
+    if(d){ PHOTOS[id] = d; if(imgEl.isConnected && sheet.dataset.item === id) imgEl.src = d; }
+  }catch(e){ /* küçük önizleme ekranda kalır */ }
 }
 
 async function loadImgs(){
@@ -759,15 +773,24 @@ async function loadImgs(){
     IMGS = m;
   }catch(e){ /* okunamazsa fotoğrafsız devam */ }
 }
-async function putImg(id, dataUrl){
+async function putImg(id, thumb, full){
   try{
-    if(dataUrl) await setDoc(doc(db, IMG_COL, id), { data:dataUrl, at:Date.now() });
-    else        await deleteDoc(doc(db, IMG_COL, id));
-    IMGS[id] = dataUrl || "";
+    if(thumb){
+      await setDoc(doc(db, IMG_COL,   id), { data:thumb, at:Date.now() });
+      await setDoc(doc(db, PHOTO_COL, id), { data:full || thumb, at:Date.now() });
+    }else{
+      await deleteDoc(doc(db, IMG_COL,   id)).catch(()=>{});
+      await deleteDoc(doc(db, PHOTO_COL, id)).catch(()=>{});
+    }
+    IMGS[id] = thumb || ""; delete PHOTOS[id];
     return true;
   }catch(e){ toast("Fotoğraf kaydedilemedi"); return false; }
 }
-async function delImg(id){ try{ await deleteDoc(doc(db, IMG_COL, id)); }catch(e){} delete IMGS[id]; }
+async function delImg(id){
+  try{ await deleteDoc(doc(db, IMG_COL, id)); }catch(e){}
+  try{ await deleteDoc(doc(db, PHOTO_COL, id)); }catch(e){}
+  delete IMGS[id]; delete PHOTOS[id];
+}
 
 function cacheRead(){ try{ const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; }catch(e){ return null; } }
 function cacheWrite(d){ try{ localStorage.setItem(KEY, JSON.stringify(stripImgs(d))); }catch(e){} }
@@ -801,14 +824,14 @@ function authMsg(err){
 function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),1800); }
 
 /* Fotoğrafı küçültüp veriye gömer */
-function shrink(file, max=900){
+function shrink(file, max=900, q=.82){
   return new Promise((res,rej)=>{
     const r=new FileReader();
     r.onload=()=>{ const i=new Image();
       i.onload=()=>{ const sc=Math.min(1,max/Math.max(i.width,i.height));
         const c=document.createElement('canvas'); c.width=i.width*sc; c.height=i.height*sc;
         c.getContext('2d').drawImage(i,0,0,c.width,c.height);
-        res(c.toDataURL('image/jpeg',.82)); };
+        res(c.toDataURL('image/jpeg',q)); };
       i.onerror=rej; i.src=r.result; };
     r.onerror=rej; r.readAsDataURL(file);
   });
@@ -827,7 +850,7 @@ const wisp = `<div class="wisp" aria-hidden="true"><i></i><i></i></div>`;
 
 function thumb(it){
   return it.img
-    ? `<div class="thumb"><img src="${esc(it.img)}" alt="${esc(it.name)}" loading="lazy"></div>`
+    ? `<div class="thumb"><img src="${esc(it.img)}" alt="${esc(it.name)}" loading="lazy" decoding="async"></div>`
     : `<div class="thumb empty"><span>FOTOĞRAF</span></div>`;
 }
 
@@ -876,17 +899,18 @@ function renderMenu(){
 }
 
 /* Okunan kategoriyi şeritte işaretle */
-let obs=null;
+let obs=null, curCat=null;
 function observeCats(){
   if(obs) obs.disconnect();
+  curCat = null;
   obs = new IntersectionObserver(es=>{
-    es.forEach(en=>{
-      if(!en.isIntersecting) return;
-      document.querySelectorAll('.chip').forEach(ch=>{
-        const on = ch.dataset.go === en.target.id;
-        ch.setAttribute('aria-current', on);
-        if(on) ch.scrollIntoView({inline:'center',block:'nearest'});
-      });
+    const hit = es.find(en=>en.isIntersecting);
+    if(!hit || hit.target.id === curCat) return;   /* aynı kategori: dokunma */
+    curCat = hit.target.id;
+    document.querySelectorAll('.chip').forEach(ch=>{
+      const on = ch.dataset.go === curCat;
+      ch.setAttribute('aria-current', on);
+      if(on) ch.scrollIntoView({inline:'center',block:'nearest'});
     });
   },{rootMargin:'-25% 0px -65% 0px'});
   document.querySelectorAll('.cat').forEach(s=>obs.observe(s));
@@ -898,44 +922,46 @@ $('#chips').addEventListener('click', e=>{
   document.getElementById(b.dataset.go).scrollIntoView({behavior:'smooth',block:'start'});
 });
 
+/* Tek kaydırma dinleyicisi: üst başlık, dağ derinliği ve alacakaranlık aynı
+   karede hesaplanır; değer değişmediyse DOM'a hiç dokunulmaz. */
 const nav = $('#nav'), bar = $('#topbar');
-addEventListener('scroll', ()=>{
-  bar.classList.toggle('show', scrollY > 320);
-  nav.classList.toggle('stuck', scrollY > 300);
-}, {passive:true});
+(function scrollFx(){
+  const soft = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const far=$('#lFar'), mid=$('#lMid'), near=$('#lNear');
+  let tick=false, lastBar=null, lastNav=null, lastDusk=-1, lastPar=-1;
 
-/* Dağ katmanlarında kaydırma derinliği */
-(function parallax(){
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const far=$('#lFar'), mid=$('#lMid'), near=$('#lNear'); if(!far) return;
-  let tick=false;
-  addEventListener('scroll',()=>{ if(tick) return; tick=true;
-    requestAnimationFrame(()=>{ const y=Math.min(scrollY,900);
-      far.setAttribute('transform',`translate(0 ${y*0.020})`);
-      mid.setAttribute('transform',`translate(0 ${y*0.040})`);
-      near.setAttribute('transform',`translate(0 ${y*0.065})`);
-      tick=false; });
-  },{passive:true});
-})();
+  const frame = ()=>{
+    tick = false;
+    const y = scrollY;
 
-/* Aşağı indikçe alacakaranlık (dağlar aydınlık kalır) */
-(function dusk(){
-  let tick=false;
-  const set=()=>{
-    const max=Math.max(1, document.body.scrollHeight - innerHeight);
-    const p=Math.min(1, scrollY/max);
-    document.documentElement.style.setProperty('--dusk', (p*0.42).toFixed(3));
-    tick=false;
+    const showBar = y > 320; if(showBar !== lastBar){ bar.classList.toggle('show', showBar); lastBar = showBar; }
+    const stuck   = y > 300; if(stuck   !== lastNav){ nav.classList.toggle('stuck', stuck);  lastNav = stuck;   }
+
+    const max = Math.max(1, document.body.scrollHeight - innerHeight);
+    const d = Math.round(Math.min(1, y/max) * 42) / 100;      /* %1 adım: gereksiz boyama yok */
+    if(d !== lastDusk){ document.documentElement.style.setProperty('--dusk', d); lastDusk = d; }
+
+    if(soft && far){
+      const p = Math.round(Math.min(y, 900) / 6) * 6;         /* 6px adım */
+      if(p !== lastPar){
+        far.style.transform  = `translateY(${(p*0.020).toFixed(1)}px)`;
+        mid.style.transform  = `translateY(${(p*0.040).toFixed(1)}px)`;
+        near.style.transform = `translateY(${(p*0.065).toFixed(1)}px)`;
+        lastPar = p;
+      }
+    }
   };
-  addEventListener('scroll',()=>{ if(!tick){tick=true; requestAnimationFrame(set);} },{passive:true});
-  addEventListener('resize', set, {passive:true}); set();
+  addEventListener('scroll', ()=>{ if(!tick){ tick = true; requestAnimationFrame(frame); } }, {passive:true});
+  addEventListener('resize', ()=>{ lastDusk = -1; frame(); }, {passive:true});
+  frame();
 })();
 
 /* Süzülen altın kor parçacıkları */
 (function embers(){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   let html='';
-  for(let i=0;i<16;i++){
+  const N = innerWidth < 520 ? 10 : 16;
+  for(let i=0;i<N;i++){
     const s=(Math.random()*2.4+1.6).toFixed(1);
     html += `<i style="left:${(Math.random()*100).toFixed(1)}%;width:${s}px;height:${s}px;
       animation-duration:${(Math.random()*22+20).toFixed(0)}s;
@@ -951,8 +977,10 @@ function openItem(catId, id){
   const it = c.items.find(x=>x.id===id); if(!it) return;
   const ph = $('#sheetPhoto');
   ph.querySelector('img')?.remove();
+  sheet.dataset.item = id;
   if(it.img){ ph.classList.remove('empty'); ph.querySelector('span').style.display='none';
-    const im=new Image(); im.src=it.img; im.alt=it.name; ph.prepend(im);
+    const im=new Image(); im.decoding='async'; im.src=it.img; im.alt=it.name; ph.prepend(im);
+    loadPhoto(id, im);                    /* tam boy yalnızca burada indirilir */
   }else{ ph.classList.add('empty'); ph.querySelector('span').style.display=''; }
   $('#sheetCat').textContent   = c.name;
   $('#sheetName').textContent  = it.name;
@@ -1141,7 +1169,7 @@ panel.addEventListener('click', async e=>{
     await saveData(); drawPanel(); return;
   }
   if(id==='fCancel'){ EDIT=null; drawPanel(); return; }
-  if(id==='fImgDel'){ EDIT.item.img=""; EDIT.imgDirty=true; drawPanel(); return; }
+  if(id==='fImgDel'){ EDIT.item.img=""; EDIT.item.full=""; EDIT.imgDirty=true; drawPanel(); return; }
   if(id==='fSave'){
     const it = EDIT.item;
     it.name=$('#fName').value.trim(); it.desc=$('#fDesc').value.trim();
@@ -1151,7 +1179,8 @@ panel.addEventListener('click', async e=>{
     const old = DATA.categories.find(c=>c.id===EDIT.catId);
     if(!EDIT.isNew && old){ const i=old.items.findIndex(x=>x.id===it.id); if(i>-1) old.items.splice(i,1); }
     DATA.categories.find(c=>c.id===newCat).items.push(it);
-    if(EDIT.imgDirty) await putImg(it.id, it.img);
+    if(EDIT.imgDirty){ await putImg(it.id, it.img, it.full); }
+    delete it.full;                                   /* tam boy menü dokümanına yazılmaz */
     EDIT=null; await saveData("Ürün kaydedildi"); drawPanel(); return;
   }
 
@@ -1192,11 +1221,12 @@ panel.addEventListener('change', async e=>{
   if(e.target.id!=='fImg') return;
   const f=e.target.files[0]; if(!f) return;
   try{
-    let d = await shrink(f, 820);
-    if(d.length > 900000) d = await shrink(f, 600);      /* Firestore doküman sınırı 1 MB */
-    if(d.length > 950000){ toast("Fotoğraf çok büyük, daha küçük bir görsel seçin"); return; }
-    EDIT.item.img = d; EDIT.imgDirty = true;
-    $('#fPrev').innerHTML = `<img class="preview" src="${d}">`;
+    const th = await shrink(f, 360, .72);                  /* kartlarda görünen küçük hâli */
+    let full = await shrink(f, 900, .78);                  /* ürün açılınca gösterilen hâli */
+    if(full.length > 900000) full = await shrink(f, 700, .72);
+    if(full.length > 950000){ toast("Fotoğraf çok büyük, daha küçük bir görsel seçin"); return; }
+    EDIT.item.img = th; EDIT.item.full = full; EDIT.imgDirty = true;
+    $('#fPrev').innerHTML = `<img class="preview" src="${th}">`;
     toast("Fotoğraf hazır, kaydetmeyi unutmayın");
   }catch(err){ toast("Fotoğraf yüklenemedi"); }
 });
