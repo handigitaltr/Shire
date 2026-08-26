@@ -207,6 +207,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .nav{
   position:sticky;top:calc(46px + env(safe-area-inset-top,0px));z-index:15;
   contain:layout style;   /* çip değişimi yalnızca bu şeridi yeniden hesaplasın */
+  will-change:transform;  /* kendi katmanı: çizimi sayfanın geri kalanına bulaşmaz */
   padding:12px 0 12px;
   background:linear-gradient(180deg,rgba(11,23,16,.98) 60%,rgba(11,23,16,0));
 }
@@ -219,9 +220,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   font-family:var(--carve);font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
   color:rgba(233,223,198,.72);white-space:nowrap;
   background:rgba(26,19,9,.5);
-  transition:.28s ease;
+  /* Yalnızca ucuz özellikler yumuşasın; arka plan gradyanı ve gölge
+     canlandırılırsa şerit her karede yeniden çizilir. */
+  transition:color .22s ease,border-color .22s ease;
 }
 .chip:hover{color:var(--gold-lt);border-color:rgba(201,162,75,.5)}
+/* Fling sırasında kategori değişince geçiş beklenmez, anında yer değiştirir */
+.scrolling .chip{transition:none}
 .chip[aria-current="true"]{
   color:#12240F;border-color:var(--gold-lt);
   background:linear-gradient(160deg,var(--gold-lt),var(--gold) 55%,var(--gold-dk));
@@ -947,10 +952,14 @@ function observeCats(){
        hızlı kaydırıyorken bunu yapmak kareleri düşürüyordu. Kaydırma
        durduktan sonra ortalanır. */
     clearTimeout(chipTimer);
-    chipTimer = setTimeout(()=>{
+    const center = ()=>{
+      /* Sayfa hâlâ kayıyorsa bekle: yatay yumuşak kaydırma dikey fling'in
+         üstüne binerse geçiş takılıyor. */
+      if(document.documentElement.classList.contains('scrolling')){ chipTimer = setTimeout(center, 160); return; }
       document.querySelector('.chip[aria-current="true"]')
         ?.scrollIntoView({inline:'center',block:'nearest'});
-    }, 160);
+    };
+    chipTimer = setTimeout(center, 160);
   },{rootMargin:'-25% 0px -65% 0px'});
   document.querySelectorAll('.cat').forEach(s=>obs.observe(s));
 }
