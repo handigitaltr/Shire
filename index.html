@@ -7,7 +7,7 @@
 <title>Shire — Waffle & Coffee</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Griffy&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
    SHIRE — DİJİTAL MENÜ
@@ -30,10 +30,10 @@
   --line:rgba(201,162,75,.28);
 
   /* Tipografi */
-  --display:'IM Fell English',Georgia,'Times New Roman',serif;      /* tören başlıkları */
-  --carve:'IM Fell English SC','IM Fell English',Georgia,serif;     /* oyma büyük harf: ürün adı, etiket */
-  --script:'IM Fell English',Georgia,serif;                          /* italik anlatım (font-style:italic ile) */
-  --body:'IM Fell English',Georgia,serif;                            /* okunur gövde */
+  --display:'Griffy','IM Fell English',Georgia,'Times New Roman',serif;   /* büyük başlıklar */
+  --carve:'Griffy','IM Fell English SC','IM Fell English',Georgia,serif;  /* ürün adı, etiket, fiyat */
+  --script:'Griffy','IM Fell English',Georgia,serif;                     /* italik anlatım notları */
+  --body:'Griffy','IM Fell English',Georgia,serif;                       /* açıklama / gövde metni */
 
   /* Ölçü */
   --pad:20px;
@@ -407,27 +407,27 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   font-family:var(--carve);font-size:8px;letter-spacing:.2em;color:rgba(235,217,166,.45);
 }
 .item-name{
-  font-family:var(--carve);font-weight:600;font-size:13.5px;line-height:1.3;
-  color:var(--parch);letter-spacing:.045em;margin:11px 0 0;word-break:break-word;
+  font-family:var(--carve);font-weight:400;font-size:14.5px;line-height:1.32;
+  color:var(--parch);letter-spacing:.03em;margin:11px 0 0;word-break:break-word;
 }
 .item-desc{
-  margin:6px 0 0;font-size:13px;line-height:1.48;color:var(--muted);
+  margin:6px 0 0;font-size:13.5px;line-height:1.5;color:var(--muted);
   display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
 }
 .item-foot{
   margin-top:auto;padding-top:11px;width:100%;
   display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;
 }
-.price{font-family:var(--carve);font-weight:700;font-size:15px;letter-spacing:.02em;color:var(--gold-lt)}
+.price{font-family:var(--carve);font-weight:400;font-size:16px;letter-spacing:.02em;color:var(--gold-lt)}
 .kcal{
-  font-family:var(--carve);font-size:9.5px;letter-spacing:.12em;
-  border:1px solid rgba(201,162,75,.35);border-radius:999px;padding:3px 8px;
+  font-family:var(--carve);font-size:10.5px;letter-spacing:.1em;
+  border:1px solid rgba(201,162,75,.35);border-radius:999px;padding:3px 9px;
   color:rgba(233,223,198,.7);white-space:nowrap;
 }
 .badge{
   display:inline-block;margin-top:8px;padding:3px 9px;border-radius:999px;
   border:1px solid rgba(201,162,75,.45);
-  font-family:var(--carve);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-lt);
+  font-family:var(--carve);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-lt);
 }
 .empty-note{
   grid-column:1/-1;text-align:center;font-family:var(--script);font-style:italic;
@@ -464,10 +464,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .sheet-photo .veil{position:absolute;inset:auto 0 0;height:60%;background:linear-gradient(transparent,rgba(12,27,18,.95));z-index:2}
 .sheet-body{padding:20px var(--pad) 4px;text-align:center}
 .sheet-cat{font-family:var(--carve);font-size:9.5px;letter-spacing:.3em;text-transform:uppercase;color:var(--gold);opacity:.85}
-.sheet-name{font-family:var(--display);font-weight:700;font-size:clamp(19px,5.6vw,25px);letter-spacing:.03em;text-transform:uppercase;margin:10px 0 0;color:var(--gold-lt);text-shadow:0 2px 18px rgba(201,162,75,.25)}
+.sheet-name{font-family:var(--display);font-weight:400;font-size:clamp(19px,5.6vw,25px);letter-spacing:.03em;text-transform:uppercase;margin:10px 0 0;color:var(--gold-lt);text-shadow:0 2px 18px rgba(201,162,75,.25)}
 .sheet-desc{font-size:15px;color:var(--muted);margin:12px auto 0;max-width:400px}
-.sheet-kcal{font-family:var(--carve);font-size:9.5px;letter-spacing:.22em;color:rgba(233,223,198,.55);margin:14px 0 0}
-.sheet-price{font-family:var(--carve);font-weight:700;font-size:24px;letter-spacing:.03em;color:var(--parch);margin-top:18px}
+.sheet-kcal{font-family:var(--carve);font-size:10.5px;letter-spacing:.2em;color:rgba(233,223,198,.55);margin:14px 0 0}
+.sheet-price{font-family:var(--carve);font-weight:400;font-size:25px;letter-spacing:.03em;color:var(--parch);margin-top:18px}
 .sheet-close{
   display:block;margin:22px auto 0;padding:12px 34px;border-radius:999px;
   border:1px solid var(--line);color:var(--gold-lt);
@@ -506,7 +506,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 }
 .panel.open{display:block}
 .panel-wrap{max-width:var(--maxw);margin:0 auto}
-.panel h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.04em;
+.panel h2{font-family:var(--display);font-weight:400;font-size:22px;letter-spacing:.04em;
   text-transform:uppercase;color:var(--gold-lt);margin:0 0 4px;text-align:center}
 .panel .sub{text-align:center;font-family:var(--script);font-style:italic;color:var(--muted);margin:0 0 18px}
 .tabs{display:flex;gap:8px;margin-bottom:16px}
@@ -531,7 +531,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   font-family:var(--carve);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-lt);
   background:rgba(26,19,9,.6);
 }
-.btn.primary{background:linear-gradient(160deg,var(--gold-lt),var(--gold));color:#12240F;border-color:var(--gold-lt);font-weight:600}
+.btn.primary{background:linear-gradient(160deg,var(--gold-lt),var(--gold));color:#12240F;border-color:var(--gold-lt);font-weight:400}
 .btn.danger{border-color:rgba(190,90,70,.5);color:#E9A99B}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .card{
