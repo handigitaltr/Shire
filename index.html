@@ -566,13 +566,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .toast.show{opacity:1;transform:translateX(-50%)}
 
 /* ============================================================
-   GİRİŞ ANİMASYONU — Durin Kapıları esintili, ~2.8sn
+   GİRİŞ ANİMASYONU — Durin Kapıları esintili, kapı açılınca logo belirir (~5sn)
    ============================================================ */
 :root{
-  --dg-in:   .45s;   /* çizgilerin yanışı */
-  --dg-open: 1.75s;  /* kanatların açılışı */
-  --dg-out:  .45s;   /* karartma */
-  --dg-delay:.55s;   /* açılışın başlama anı */
+  --dg-in:   .55s;   /* çizgilerin yanışı */
+  --dg-delay:.95s;   /* açılışın başlama anı */
+  --dg-open: 2.3s;   /* kanatların açılışı */
+  --dg-hold: .95s;   /* açık kapıda / amblemde bekleme */
+  --dg-out:  .8s;    /* karartma */
 }
 .splash{
   position:fixed;inset:0;z-index:999;overflow:hidden;
@@ -595,7 +596,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .splash-inner{
   position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;
   gap:18px;padding:0 24px;width:100%;
-  animation:splashOut var(--dg-out) ease-in calc(var(--dg-delay) + var(--dg-open) + .02s) both;
+  animation:splashOut var(--dg-out) ease-in calc(var(--dg-delay) + var(--dg-open) + var(--dg-hold)) both;
 }
 .splash-stage{
   position:relative;width:min(72vw,290px);aspect-ratio:400/620;
@@ -629,7 +630,22 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   position:absolute;left:50%;top:54%;width:6%;height:56%;z-index:4;pointer-events:none;
   transform:translate(-50%,-50%);opacity:0;
   background:radial-gradient(ellipse at center, rgba(255,244,214,.85) 0%, rgba(201,162,75,.32) 45%, transparent 74%);
-  animation:bloomIn var(--dg-open) ease-out var(--dg-delay) forwards;
+  animation:bloomIn calc(var(--dg-open) + var(--dg-hold)) ease-out var(--dg-delay) forwards;
+}
+/* Kapı açılırken içeriden beliren logo */
+.door-emblem{
+  position:absolute;left:50%;top:53%;width:42%;z-index:5;pointer-events:none;
+  transform:translate(-50%,-50%) scale(.8);opacity:0;
+  animation:emblemIn .9s cubic-bezier(.2,.8,.25,1) calc(var(--dg-delay) + var(--dg-open) - .45s) forwards;
+}
+.door-emblem img{
+  width:100%;height:auto;display:block;
+  filter:drop-shadow(0 0 12px rgba(235,217,166,.6)) drop-shadow(0 0 28px rgba(201,162,75,.4));
+}
+.emblem-halo{
+  position:absolute;left:50%;top:50%;width:190%;height:190%;z-index:-1;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle, rgba(255,244,214,.5) 0%, rgba(201,162,75,.2) 42%, transparent 72%);
 }
 .door-reflect{
   position:absolute;left:0;right:0;top:100%;height:34%;overflow:hidden;pointer-events:none;
@@ -665,7 +681,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
   100%{transform:rotateY(97deg) translateZ(-16px)}
 }
 @keyframes bloomIn{
-  0%{opacity:0;width:5%} 45%{opacity:.95;width:48%} 100%{opacity:0;width:72%}
+  0%{opacity:0;width:5%}
+  40%{opacity:.95;width:48%}
+  70%{opacity:.88;width:58%}
+  100%{opacity:.74;width:64%}
+}
+@keyframes emblemIn{
+  from{opacity:0;transform:translate(-50%,-50%) scale(.8)}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 }
 @keyframes twinkle{0%,100%{opacity:.22}50%{opacity:1}}
 @keyframes reflectOut{from{opacity:.26}to{opacity:0}}
@@ -868,6 +891,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 
       <div class="splash-motes" id="splashMotes"></div>
       <div class="light-burst"></div>
+      <div class="door-emblem">
+        <div class="emblem-halo"></div>
+        <img src="logo.png" alt="Shire">
+      </div>
 
       <div class="door-reflect">
         <svg viewBox="0 0 400 250" preserveAspectRatio="none">
@@ -1072,7 +1099,7 @@ function buildDoorWing(id){
     document.body.style.overflow = '';
     el.remove();
   }
-  setTimeout(finish, 2850);
+  setTimeout(finish, 5050);   /* .95 gecikme + 2.3 açılış + .95 bekleme + .8 karartma */
   el.addEventListener('click', ()=>{
     if(done) return;
     el.style.transition = 'opacity .25s ease';
